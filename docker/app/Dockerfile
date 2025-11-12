@@ -37,6 +37,12 @@ COPY docker/app/config/Caddyfile /etc/frankenphp/Caddyfile
 # https://getcomposer.org/doc/03-cli.md#composer-allow-superuser
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
+# Copy composer files first for better layer caching
+COPY composer.json composer.lock symfony.lock /var/www/
+
+# Install dependencies
+RUN composer install --no-dev --no-interaction --no-progress --optimize-autoloader
+
 # Add application
 COPY . /var/www/
 RUN touch /var/www/.env
