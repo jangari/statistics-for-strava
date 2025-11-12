@@ -14,6 +14,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\RequestOptions;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -30,6 +31,8 @@ final readonly class StravaOAuthRequestHandler
         private Strava $strava,
         private Client $client,
         private Environment $twig,
+        private LoggerInterface $logger,
+        private string $webhookVerifyToken,
     ) {
     }
 
@@ -67,6 +70,21 @@ final readonly class StravaOAuthRequestHandler
                     ]);
 
                     $refreshToken = Json::decode($response->getBody()->getContents())['refresh_token'];
+
+                    try {
+                        $callbackUrl = $request->getSchemeAndHttpHost() . '/webhook/strava';
+                        $this->strava->createWebhookSubscription(
+                            $callbackUrl,
+                            $this->webhookVerifyToken
+                        );
+                        $this->logger->info('Successfully created Strava webhook subscription.');
+                    } catch (\Exception $webhookError) {
+                        // Log the error, but don't block the user.
+                        // They can still use the app, just without webhook sync.
+                        $this->logger->error('Failed to create Strava webhook subscription', [
+                            'error' => $webhookError->getMessage(),
+                        ]);
+                    }
 
                     return new Response($this->twig->render('html/oauth/refresh-token.html.twig', [
                         'refreshToken' => $refreshToken,

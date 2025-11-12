@@ -403,6 +403,25 @@ class Strava
         return $challenges;
     }
 
+    /**
+     * @return array<mixed>
+     */
+    public function createWebhookSubscription(string $callbackUrl, string $verifyToken): array
+    {
+        $this->logger->info('Attempting to create webhook subscription', ['callback_url' => $callbackUrl]);
+
+        $response = $this->request('api/v3/push_subscriptions', 'POST', [
+            RequestOptions::FORM_PARAMS => [
+                'client_id' => (string) $this->stravaClientId,
+                'client_secret' => (string) $this->stravaClientSecret,
+                'callback_url' => $callbackUrl,
+                'verify_token' => $verifyToken,
+            ],
+        ]);
+
+        return Json::decode($response);
+    }
+
     public function downloadImage(string $uri): string
     {
         $response = $this->client->request('GET', $uri, [
