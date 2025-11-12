@@ -32,7 +32,7 @@ final readonly class StravaOAuthRequestHandler
         private Client $client,
         private Environment $twig,
         private LoggerInterface $logger,
-        private string $webhookVerifyToken,
+        private ?string $webhookVerifyToken,
     ) {
     }
 
@@ -72,6 +72,9 @@ final readonly class StravaOAuthRequestHandler
                     $refreshToken = Json::decode($response->getBody()->getContents())['refresh_token'];
 
                     try {
+                        if (empty($this->webhookVerifyToken)) {
+                            throw new \Exception('WEBHOOK_VERIFY_TOKEN is not set. Cannot create subscription.');
+                        }
                         $callbackUrl = $request->getSchemeAndHttpHost() . '/webhook/strava';
                         $this->strava->createWebhookSubscription(
                             $callbackUrl,

@@ -22,7 +22,7 @@ final readonly class StravaWebhookRequestHandler
     public function __construct(
         private CommandBus $commandBus,
         private LoggerInterface $logger,
-        private string $webhookVerifyToken,
+        private ?string $webhookVerifyToken,
     ) {
     }
 
@@ -38,6 +38,11 @@ final readonly class StravaWebhookRequestHandler
             $mode = $request->query->get('hub_mode');
             $token = $request->query->get('hub_verify_token');
             $challenge = $request->query->get('hub_challenge');
+
+            if (empty($this->webhookVerifyToken)) {
+                $this->logger->error('WEBHOOK_VERIFY_TOKEN is not set in your .env file.');
+                return new Response('Webhook not configured', Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
 
             if ('subscribe' === $mode && $this->webhookVerifyToken === $token) {
                 $this->logger->info('Strava webhook validation successful');
